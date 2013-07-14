@@ -1,0 +1,50 @@
+#!/usr/bin/perl
+#submited by venam
+#depends on lynx
+
+use warnings;
+use strict;
+
+unless ($ARGV[0]) {
+	die "No Arg passed";
+}
+my $arg;
+
+foreach $arg ( @ARGV) {
+	open LYNX, "lynx -source http://m.dictionary.com/t/?q=$arg |" or die $!;
+
+	$_ = "";
+	$_ = <LYNX> until /Definition/ || /0 results for/;
+
+	if (/0 results for/) {
+		die "No answer";
+	}
+	my $head = "";
+	$head = <LYNX> until $head =~ /small/;
+
+	$head =~ s|<p><b><small>||;
+	$head =~ s|</small></b>||;
+
+	my @synonyms;
+	while (1) {
+		until ( /anchor / || /<p><b><small>/ ) {
+			$_ = <LYNX>;
+			chomp $_;
+		}
+		if (/<p><b><small>/ ) {
+			last;
+		}
+		else {
+			$_ =~ /<anchor >([^<]*)<go /;
+			push @synonyms, $1;
+			$_ = <LYNX>;
+			chomp $_;
+		}
+	}
+
+	print "\n\e[1;35m|--Definition of $arg--|\e[0;0m\n$head";
+	print "\n\e[0;35m|--Synonyms of $arg--|\e[0;0m\n";
+	foreach (@synonyms) {
+		print $_,"\n";
+	}
+}
