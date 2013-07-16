@@ -12,7 +12,6 @@
 #
 # Also, I recommend running this with jruby for better thread concurrency
 require 'mechanize'
-require 'xmlhasher'
 
 ## Program
 
