@@ -20,36 +20,31 @@ require 'colorize'
 LOG_FILE  = "scriptlog.txt"
 
 # Prefix number for usernames...Every school has one, and usually uses them to login to the e-libraries
-# The two defaults are for schools in RRISD
-LOGIN_SEQ = ["46", "07"]
+# The default is for a school in RRISD
+LOGIN_SEQ = ["46""]
 
 # School district
 LOGIN_DIS = "Round Rock ISD"
 
 ## Program
 
-def doReq num, seq, dis
+def do_req num, seq, dis
   a = Mechanize.new
   a.get('http://platform.learning.com/LoginNew.htm') do |page|
     # Submit the login form
-    page.form_with() do |f|
+    page.form_with do |f|
       f.learningUserName = seq + num.to_s
       f.learningPassword = num.to_s
       f.learningDistrictName = dis
     end.click_button
 
     form = page.forms.first
-    a_page = form.submit
-    return a_page
+    return form.submit
   end
 end
 
 def is_valid? num, seq, dis
-  if doReq(num, seq, dis).content =~ /Error/
-    return false
-  else
-    return true
-  end
+  !do_req(num, seq, dis).content =~ /Error/
 end
 
 # Arg parser
